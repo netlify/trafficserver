@@ -801,57 +801,59 @@ ConditionGeo::get_geo_string(const sockaddr *addr) const
   const char *ret = nullptr;
   int v           = 4;
 
-  switch (_geo_qual) {
-  // Country database
-  case GEO_QUAL_COUNTRY:
-    switch (addr->sa_family) {
-    case AF_INET:
-      if (gGeoIP[GEOIP_COUNTRY_EDITION]) {
-        uint32_t ip = ntohl(reinterpret_cast<const struct sockaddr_in *>(addr)->sin_addr.s_addr);
+  if (addr) {
+    switch (_geo_qual) {
+    // Country database
+    case GEO_QUAL_COUNTRY:
+      switch (addr->sa_family) {
+      case AF_INET:
+        if (gGeoIP[GEOIP_COUNTRY_EDITION]) {
+          uint32_t ip = ntohl(reinterpret_cast<const struct sockaddr_in *>(addr)->sin_addr.s_addr);
 
-        ret = GeoIP_country_code_by_ipnum(gGeoIP[GEOIP_COUNTRY_EDITION], ip);
+          ret = GeoIP_country_code_by_ipnum(gGeoIP[GEOIP_COUNTRY_EDITION], ip);
+        }
+        break;
+      case AF_INET6: {
+        if (gGeoIP[GEOIP_COUNTRY_EDITION_V6]) {
+          geoipv6_t ip = reinterpret_cast<const struct sockaddr_in6 *>(addr)->sin6_addr;
+
+          v   = 6;
+          ret = GeoIP_country_code_by_ipnum_v6(gGeoIP[GEOIP_COUNTRY_EDITION_V6], ip);
+        }
+      } break;
+      default:
+        break;
       }
+      TSDebug(PLUGIN_NAME, "eval(): Client IPv%d seems to come from Country: %s", v, ret);
       break;
-    case AF_INET6: {
-      if (gGeoIP[GEOIP_COUNTRY_EDITION_V6]) {
-        geoipv6_t ip = reinterpret_cast<const struct sockaddr_in6 *>(addr)->sin6_addr;
 
-        v   = 6;
-        ret = GeoIP_country_code_by_ipnum_v6(gGeoIP[GEOIP_COUNTRY_EDITION_V6], ip);
+    // ASN database
+    case GEO_QUAL_ASN_NAME:
+      switch (addr->sa_family) {
+      case AF_INET:
+        if (gGeoIP[GEOIP_ASNUM_EDITION]) {
+          uint32_t ip = ntohl(reinterpret_cast<const struct sockaddr_in *>(addr)->sin_addr.s_addr);
+
+          ret = GeoIP_name_by_ipnum(gGeoIP[GEOIP_ASNUM_EDITION], ip);
+        }
+        break;
+      case AF_INET6: {
+        if (gGeoIP[GEOIP_ASNUM_EDITION_V6]) {
+          geoipv6_t ip = reinterpret_cast<const struct sockaddr_in6 *>(addr)->sin6_addr;
+
+          v   = 6;
+          ret = GeoIP_name_by_ipnum_v6(gGeoIP[GEOIP_ASNUM_EDITION_V6], ip);
+        }
+      } break;
+      default:
+        break;
       }
-    } break;
+      TSDebug(PLUGIN_NAME, "eval(): Client IPv%d seems to come from ASN Name: %s", v, ret);
+      break;
+
     default:
       break;
     }
-    TSDebug(PLUGIN_NAME, "eval(): Client IPv%d seems to come from Country: %s", v, ret);
-    break;
-
-  // ASN database
-  case GEO_QUAL_ASN_NAME:
-    switch (addr->sa_family) {
-    case AF_INET:
-      if (gGeoIP[GEOIP_ASNUM_EDITION]) {
-        uint32_t ip = ntohl(reinterpret_cast<const struct sockaddr_in *>(addr)->sin_addr.s_addr);
-
-        ret = GeoIP_name_by_ipnum(gGeoIP[GEOIP_ASNUM_EDITION], ip);
-      }
-      break;
-    case AF_INET6: {
-      if (gGeoIP[GEOIP_ASNUM_EDITION_V6]) {
-        geoipv6_t ip = reinterpret_cast<const struct sockaddr_in6 *>(addr)->sin6_addr;
-
-        v   = 6;
-        ret = GeoIP_name_by_ipnum_v6(gGeoIP[GEOIP_ASNUM_EDITION_V6], ip);
-      }
-    } break;
-    default:
-      break;
-    }
-    TSDebug(PLUGIN_NAME, "eval(): Client IPv%d seems to come from ASN Name: %s", v, ret);
-    break;
-
-  default:
-    break;
   }
 
   return ret ? ret : "(unknown)";
@@ -862,6 +864,10 @@ ConditionGeo::get_geo_int(const sockaddr *addr) const
 {
   int64_t ret = -1;
   int v       = 4;
+
+  if (!addr) {
+    return 0;
+  }
 
   switch (_geo_qual) {
   // Country Databse
