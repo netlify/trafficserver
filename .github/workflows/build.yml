@@ -1,0 +1,59 @@
+name: Netlify TrafficServer
+on:
+  push:
+    branches:
+      - 7.1.x-netlify
+      - 9.0.x-netlify
+  pull_request:
+    branches:
+      - 7.1.x-netlify
+      - 9.0.x-netlify
+jobs:
+  build:
+    name: Build and Test
+    strategy:
+      fail-fast: true
+      matrix:
+        build-type: [Debug, Release]
+        include:
+          - build-type: Debug
+            AM_CXXFLAGS: "-Og -fno-omit-frame-pointer"
+            CONFIGURE_OPTS: "--enable-asan --enable-debug"
+            LSAN_OPTIONS: "detect_leaks=0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Build Environment
+        run: |
+          sudo apt update && sudo apt -y upgrade
+          sudo apt install -y build-essential autoconf automake libtool pkg-config
+          sudo apt install -y software-properties-common ca-certificates apt-transport-https curl wget
+          sudo apt install -y lsb-release lz4 zstd
+          sudo apt install g++-9 gcc-9
+      - name: Install Dependencies
+        run: >
+          sudo apt install -y
+          libluajit-5.1-dev
+          libunwind8-dev
+          libexpat1-dev
+          libhwloc-dev
+          libgeoip-dev
+          libpcre3-dev
+          liblzma-dev 
+          libcap-dev
+          libssl-dev
+          libb64-dev
+          zlib1g-dev
+          tcl-dev
+      - name: Generate Configure Script
+        run: autoreconf --install --force
+      - name: Configure
+        run: echo $AM_CXXFLAGS
+        env:
+          AM_CXXFLAGS: ${{ matrix.AM_CXXFLAGS }}
+          CONFIGURE_OPTS: ${{ matrix.CONFIGURE_OPTS }}
+          LSAN_OPTIONS: ${{ matrix.LSAN_OPTIONS }}
+      - name: Build
+        run: echo TODO
+      - name: Package
+        run: echo TODO
