@@ -1,9 +1,10 @@
 Package: netlify-trafficserver
 # This is incorrect on purpose. Fix before merging
-Version: 10.x
+Version: 1:10.x
 Section: devel
 Priority: optional
 Architecture: amd64
 Maintainer: Isabella Muerte <imuerte>
+Replaces: trafficserver trafficserver-dev
 Description: Netlify TrafficServer Distribution
  This is the Netlify fork of Apache TrafficServer.

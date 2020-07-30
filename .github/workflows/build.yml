@@ -17,9 +17,11 @@ jobs:
         build-type: [Debug, Release]
         include:
           - build-type: Debug
-            AM_CXXFLAGS: "-Og -fno-omit-frame-pointer"
+            AM_CXXFLAGS: "-Og -ggdb -fno-omit-frame-pointer"
             CONFIGURE_OPTS: "--enable-asan --enable-debug"
             LSAN_OPTIONS: "detect_leaks=0"
+          - build-type: Release
+            AM_CXXFLAGS: "-O2"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -39,6 +41,7 @@ jobs:
           libhwloc-dev
           libgeoip-dev
           libpcre3-dev
+          libyamlcpp-dev
           liblzma-dev 
           libcap-dev
           libssl-dev
@@ -47,13 +50,18 @@ jobs:
           tcl-dev
       - name: Generate Configure Script
         run: autoreconf --install --force
+      - name: Create Build Directory
+        run: mkdir -p ${{ github.workspace }}/build
       - name: Configure
-        run: echo $AM_CXXFLAGS
+        run: ${{ github.workspace }}/configure --prefix=/opt/ts --enable-experimental-plugins
+        working-directory: ${{ github.workspace }}/build
         env:
-          AM_CXXFLAGS: ${{ matrix.AM_CXXFLAGS }}
+          AM_CXXFLAGS: "${{ matrix.AM_CXXFLAGS }} -std=c++17 -Wno-cpp -Wno-deprecated-copy"
           CONFIGURE_OPTS: ${{ matrix.CONFIGURE_OPTS }}
+      - name: Build TrafficServer
+        run: make -j
+        env:
           LSAN_OPTIONS: ${{ matrix.LSAN_OPTIONS }}
-      - name: Build
-        run: echo TODO
       - name: Package
+        if: github.event_name == "push"
         run: echo TODO
