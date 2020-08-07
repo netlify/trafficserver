@@ -14,6 +14,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
+        package-name: trafficserver-dev # Add non -dev to list later
         build-type: [Debug, Release]
         include:
           - build-type: Debug
@@ -35,33 +36,76 @@ jobs:
       - name: Install Dependencies
         run: >
           sudo apt install -y
+          libjpeg-turbo8-dev
           libluajit-5.1-dev
+          libyaml-cpp-dev
           libunwind8-dev
           libexpat1-dev
           libhwloc-dev
           libgeoip-dev
           libpcre3-dev
-          libyamlcpp-dev
-          liblzma-dev 
+          liblzma-dev
           libcap-dev
           libssl-dev
           libb64-dev
+          libpng-dev
           zlib1g-dev
           tcl-dev
       - name: Generate Configure Script
         run: autoreconf --install --force
-      - name: Create Build Directory
+      - name: Create Build Directory # Might not be needed due to autoreconf!
         run: mkdir -p ${{ github.workspace }}/build
       - name: Configure
         run: ${{ github.workspace }}/configure --prefix=/opt/ts --enable-experimental-plugins
         working-directory: ${{ github.workspace }}/build
         env:
           AM_CXXFLAGS: "${{ matrix.AM_CXXFLAGS }} -std=c++17 -Wno-cpp -Wno-deprecated-copy"
-          CONFIGURE_OPTS: ${{ matrix.CONFIGURE_OPTS }}
+          CONFIGURE_OPTS: "${{ matrix.CONFIGURE_OPTS }}"
       - name: Build TrafficServer
         run: make -j
         env:
           LSAN_OPTIONS: ${{ matrix.LSAN_OPTIONS }}
-      - name: Package
+      - name: Acquire Package Info
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        id: info
+        run: |- # TODO: Come up with better variable names 😬
+          traffic_ctl=$(find $PWD -name traffic_ctl \( ! -regex '.*/\..*' \) -type f -executable)
+          upstream=$(${traffic_ctl} --version | sed -E 's/[^0-9]+(([0-9]+[.]){2}[0-9]+).*$/\1/')
+          revision=$(date +'%Y.%m.%d')
+          tag=$(date -u --date="1970-01-01 UTC $(date -u +%T)" +%s)
+          version=${upstream}+netlify-${revision}~${tag}
+          echo "::set-output name=version::${version}"
+          echo "::set-output name=package::${{ matrix.package-name }}_${version}_amd64"
+      - name: Install to Staging Area
+        run: make install DESTDIR=${{github.workspace}}/${{ steps.info.outputs.package }}
+      - name: Generate Package Manifest # NOTE: We use an epoch (1:) because we differ from ubuntu versioning
+        run: |-
+          mkdir -p ${{steps.info.outputs.package}}/DEBIAN/control
+          tee ${{steps.info.outputs.package}}/DEBIAN/control <<- EOF
+          Package: netlify-${{ matrix.package-name}}
+          Section: devel
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Isabella Muerte <imuerte>
+          Depends: libssl1.1,
+            libluajit-5.1.2,
+            libhwlock15,
+            libunwind8,
+            libgeoip1,
+            libcurl4,
+            liblzma5,
+            libpcre3,
+            libcap2
+          Conflicts: ${{ matrix.package-name }}
+          Replaces: ${{ matrix.package-name }}
+          Breaks: ${{ matrix.package-name }}
+          Description: Netlify TrafficServer Distribution
+           This is the Netlify Inc. fork of Apache TrafficServer.
+          Version: 1:${{ steps.info.outputs.version }}
+          EOF
+      - name: Create Debian Package
+        run: dpkg-deb --build --verbose ${{ steps.info.outputs.package }}
+      - name: Create Release
         if: github.event_name == "push"
         run: echo TODO
