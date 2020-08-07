@@ -6,6 +6,7 @@ on:
       - 9.0.x-netlify
   pull_request:
     branches:
+      - readme-and-settings
       - 7.1.x-netlify
       - 9.0.x-netlify
 jobs:
@@ -52,8 +53,14 @@ jobs:
     outputs:
       release: ${{ steps.info.release }}
     steps:
-      - name: Checkout
+      - name: Checkout Branch
         uses: actions/checkout@v2
+        if: github.base_ref != 'readme-and-settings'
+      - name: Checkout Branch
+        if: github.base_ref == 'readme-and-settings'
+        uses: actions/checkout@v2
+        with:
+          ref: 7.1.x-netlify
       - name: Setup Build Environment
         run: |
           sudo apt update && sudo apt -y upgrade
