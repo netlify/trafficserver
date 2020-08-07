@@ -98,6 +98,7 @@ jobs:
           CONFIGURE_OPTS: "${{ matrix.CONFIGURE_OPTS }}"
       - name: Build TrafficServer
         run: make -j
+        working-directory: ${{ github.workspace }}/build
         env:
           LSAN_OPTIONS: ${{ matrix.LSAN_OPTIONS }}
       - name: Acquire Package Info
