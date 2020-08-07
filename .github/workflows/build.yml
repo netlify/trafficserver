@@ -37,15 +37,18 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        package-name: trafficserver-dev # Add non -dev to list later
-        build-type: [Debug, Release]
+        # TODO: Remove development files from non-dev form
+        package-name: [trafficserver-dev, trafficserver]
+        build-type: [Debug, Release, RelWithDebInfo]
         include:
           - build-type: Debug
             AM_CXXFLAGS: "-Og -ggdb -fno-omit-frame-pointer"
             CONFIGURE_OPTS: "--enable-asan --enable-debug"
             LSAN_OPTIONS: "detect_leaks=0"
           - build-type: Release
-            AM_CXXFLAGS: "-O2"
+            AM_CXXFLAGS: "-O2 -DNDEBUG"
+          - build-type: RelWithDebInfo
+            AM_CXXFLAGS: "-O2 -ggdb -DNDEBUG"
     outputs:
       release: ${{ steps.info.release }}
     steps:
