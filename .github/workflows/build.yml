@@ -9,8 +9,31 @@ on:
       - 7.1.x-netlify
       - 9.0.x-netlify
 jobs:
+  package:
+    name: Package
+    needs: build
+    runs-on: ubuntu-20.04
+    #if: github.event_name == "push"
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: packages
+      - name: Display structure of downloaded files
+        run: ls -R
+        #- name: Create Release
+        #  uses: actions/create-release@v1
+        #  run: echo TODO
+        #- name: Upload Debian Package
+        #  uses: actions/upload-release-asset@v1
+        #  with:
+        #    upload_url: ${{ steps.create-release.outputs.upload_url }}
+        #    asset_content_type: application/vnd.debian.binary-package
+        #    asset_name: ${{ needs.build.outputs.filename }}
+        #    #          asset_path:
   build:
-    name: Build and Test
+    name: Build
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: true
       matrix:
@@ -23,6 +46,8 @@ jobs:
             LSAN_OPTIONS: "detect_leaks=0"
           - build-type: Release
             AM_CXXFLAGS: "-O2"
+    outputs:
+      release: ${{ steps.info.release }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -75,8 +100,10 @@ jobs:
           revision=$(date +'%Y.%m.%d')
           tag=$(date -u --date="1970-01-01 UTC $(date -u +%T)" +%s)
           version=${upstream}+netlify-${revision}~${tag}
-          echo "::set-output name=version::${version}"
+          release=${upstream}+$(date +'%F.%T')
           echo "::set-output name=package::${{ matrix.package-name }}_${version}_amd64"
+          echo "::set-output name=release::${upstream}+$(date +'%F.%T')"
+          echo "::set-output name=version::${version}"
       - name: Install to Staging Area
         run: make install DESTDIR=${{github.workspace}}/${{ steps.info.outputs.package }}
       - name: Generate Package Manifest # NOTE: We use an epoch (1:) because we differ from ubuntu versioning
@@ -106,6 +133,8 @@ jobs:
           EOF
       - name: Create Debian Package
         run: dpkg-deb --build --verbose ${{ steps.info.outputs.package }}
-      - name: Create Release
-        if: github.event_name == "push"
-        run: echo TODO
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.package-name }}-${{matrix.build-type}}
+          path: ${{ github.workspace }}/**/*.deb
