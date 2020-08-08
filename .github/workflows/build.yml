@@ -50,6 +50,9 @@ jobs:
             AM_CXXFLAGS: "-O2 -DNDEBUG"
           - build-type: RelWithDebInfo
             AM_CXXFLAGS: "-O2 -ggdb -DNDEBUG"
+    env:
+      CXX: g++-9
+      CC: gcc-9
     outputs:
       release: ${{ steps.info.release }}
     steps:
