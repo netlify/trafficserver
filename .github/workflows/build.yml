@@ -41,20 +41,7 @@ jobs:
         # TODO: Remove development files from non-dev form
         package-name: [trafficserver-dev, trafficserver]
         build-type: [Debug, Release, RelWithDebInfo]
-        cxx-flags: >-
-          -std=c++17
-          -Wall
-          -Wextra
-          -Wno-deprecated-copy
-          -Wno-ignored-qualifiers
-          -Wno-unused-parameter
-          -Wno-format-truncation
-          -Wno-cast-function-type
-          -Wno-stringop-overflow
-          -Wno-invalid-offsetof
-          -Wno-cpp
-          -fno-strict-aliasing
-          -mcx16
+        cxx-flags: "-std=c++17 -Wall -Wextra -Wno-deprecated-copy -Wno-ignored-qualifiers -Wno-unused-parameter -Wno-format-truncation -Wno-cast-function-type -Wno-stringop-overflow -Wno-invalid-offsetof -Wno-cpp -fno-strict-aliasing -mcx16"
         include:
           - build-type: Debug
             build-flags: "-Og -ggdb -fno-omit-frame-pointer"
