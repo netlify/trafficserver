@@ -93,8 +93,6 @@ jobs:
         run: autoreconf --install --force
         env:
           AM_CXXFLAGS: "${{ matrix.AM_CXXFLAGS }} -std=c++17 -Wno-cpp -Wno-deprecated-copy"
-      - name: Create Build Directory # Might not be needed due to autoreconf!
-        run: mkdir -p ${{ github.workspace }}/build
       - name: Configure
         run: ${{ github.workspace }}/configure --prefix=/opt/ts --enable-experimental-plugins
         working-directory: ${{ github.workspace }}/build
