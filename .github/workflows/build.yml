@@ -91,6 +91,13 @@ jobs:
           tcl-dev
       - name: Generate Configure Script
         run: autoreconf --install --force
+      - name: Configure
+        run: >-
+          ${{ github.workspace }}/configure
+          --prefix=/opt/ts
+          --enable-experimental-plugins
+          ${{ matrix.CONFIGURE_OPTS }}
+        working-directory: ${{ github.workspace }}/build
         env:
           CXXFLAGS: >-
             -std=c++17
@@ -107,13 +114,6 @@ jobs:
             -fno-strict-aliasing
             -mcx16
             ${{ matrix.build-flags }}
-      - name: Configure
-        run: >-
-          ${{ github.workspace }}/configure
-          --prefix=/opt/ts
-          --enable-experimental-plugins
-          ${{ matrix.CONFIGURE_OPTS }}
-        working-directory: ${{ github.workspace }}/build
       - name: Build TrafficServer
         run: make -j VERBOSE=1
         working-directory: ${{ github.workspace }}/build
