@@ -140,7 +140,7 @@ jobs:
         working-directory: ${{ github.workspace }}/build
       - name: Generate Package Manifest # NOTE: We use an epoch (1:) because we differ from ubuntu versioning
         run: |-
-          mkdir -p ${{steps.info.outputs.package}}/DEBIAN/control
+          mkdir -p ${{steps.info.outputs.package}}/DEBIAN
           tee ${{steps.info.outputs.package}}/DEBIAN/control <<- EOF
           Package: netlify-${{ matrix.package-name}}
           Section: devel
