@@ -53,7 +53,7 @@ jobs:
           -Wno-stringop-overflow
           -Wno-invalid-offsetof
           -Wno-cpp
-          -fno-strict-aliasing # TODO: Get this removed!
+          -fno-strict-aliasing
           -mcx16
         include:
           - build-type: Debug
