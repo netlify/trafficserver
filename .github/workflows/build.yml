@@ -100,7 +100,7 @@ jobs:
           AM_CXXFLAGS: "${{ matrix.AM_CXXFLAGS }} -std=c++17 -Wno-cpp -Wno-deprecated-copy"
           CONFIGURE_OPTS: "${{ matrix.CONFIGURE_OPTS }}"
       - name: Build TrafficServer
-        run: make -j
+        run: make -j VERBOSE=1
         working-directory: ${{ github.workspace }}/build
         env:
           LSAN_OPTIONS: ${{ matrix.LSAN_OPTIONS }}
