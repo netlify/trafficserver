@@ -113,6 +113,7 @@ jobs:
             -Wno-invalid-offsetof
             -Wno-cpp
             -fno-strict-aliasing
+            -Dmy_bool=int
             -mcx16
             ${{ matrix.build-flags }}
       - name: Build TrafficServer
