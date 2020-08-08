@@ -41,7 +41,6 @@ jobs:
         # TODO: Remove development files from non-dev form
         package-name: [trafficserver-dev, trafficserver]
         build-type: [Debug, Release, RelWithDebInfo]
-        cxx-flags: "-std=c++17 -Wall -Wextra -Wno-deprecated-copy -Wno-ignored-qualifiers -Wno-unused-parameter -Wno-format-truncation -Wno-cast-function-type -Wno-stringop-overflow -Wno-invalid-offsetof -Wno-cpp -fno-strict-aliasing -mcx16"
         include:
           - build-type: Debug
             build-flags: "-Og -ggdb -fno-omit-frame-pointer"
@@ -93,7 +92,21 @@ jobs:
       - name: Generate Configure Script
         run: autoreconf --install --force
         env:
-          CXXFLAGS: ${{ matrix.cxx-flags }} ${{ matrix.build-flags }}
+          CXXFLAGS: >-
+            -std=c++17
+            -Wall
+            -Wextra
+            -Wno-deprecated-copy
+            -Wno-ignored-qualifiers
+            -Wno-unused-parameter
+            -Wno-format-truncation
+            -Wno-cast-function-type
+            -Wno-stringop-overflow
+            -Wno-invalid-offsetof
+            -Wno-cpp
+            -fno-strict-aliasing
+            -mcx16
+            ${{ matrix.build-flags }}
       - name: Configure
         run: >-
           ${{ github.workspace }}/configure
