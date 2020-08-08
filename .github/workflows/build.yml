@@ -75,6 +75,7 @@ jobs:
         run: >
           sudo apt install -y
           libjpeg-turbo8-dev
+          libmysqlclient-dev
           libluajit-5.1-dev
           libyaml-cpp-dev
           libunwind8-dev
