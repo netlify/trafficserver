@@ -41,15 +41,29 @@ jobs:
         # TODO: Remove development files from non-dev form
         package-name: [trafficserver-dev, trafficserver]
         build-type: [Debug, Release, RelWithDebInfo]
+        cxx-flags: >-
+          -std=c++17
+          -Wall
+          -Wextra
+          -Wno-deprecated-copy
+          -Wno-ignored-qualifiers
+          -Wno-unused-parameter
+          -Wno-format-truncation
+          -Wno-cast-function-type
+          -Wno-stringop-overflow
+          -Wno-invalid-offsetof
+          -Wno-cpp
+          -fno-strict-aliasing # TODO: Get this removed!
+          -mcx16
         include:
           - build-type: Debug
-            AM_CXXFLAGS: "-Og -ggdb -fno-omit-frame-pointer"
+            build-flags: "-Og -ggdb -fno-omit-frame-pointer"
             CONFIGURE_OPTS: "--enable-asan --enable-debug"
             LSAN_OPTIONS: "detect_leaks=0"
           - build-type: Release
-            AM_CXXFLAGS: "-O2 -DNDEBUG"
+            build-flags: "-O2 -DNDEBUG"
           - build-type: RelWithDebInfo
-            AM_CXXFLAGS: "-O2 -ggdb -DNDEBUG"
+            build-flags: "-O2 -ggdb -DNDEBUG"
     env:
       CXX: g++-9
       CC: gcc-9
@@ -92,13 +106,14 @@ jobs:
       - name: Generate Configure Script
         run: autoreconf --install --force
         env:
-          AM_CXXFLAGS: "${{ matrix.AM_CXXFLAGS }} -std=c++17 -Wno-cpp -Wno-deprecated-copy"
+          CXXFLAGS: ${{ matrix.cxx-flags }} ${{ matrix.build-flags }}
       - name: Configure
-        run: ${{ github.workspace }}/configure --prefix=/opt/ts --enable-experimental-plugins
+        run: >-
+          ${{ github.workspace }}/configure
+          --prefix=/opt/ts
+          --enable-experimental-plugins
+          ${{ matrix.CONFIGURE_OPTS }}
         working-directory: ${{ github.workspace }}/build
-        env:
-          AM_CXXFLAGS: "${{ matrix.AM_CXXFLAGS }} -std=c++17 -Wno-cpp -Wno-deprecated-copy"
-          CONFIGURE_OPTS: "${{ matrix.CONFIGURE_OPTS }}"
       - name: Build TrafficServer
         run: make -j VERBOSE=1
         working-directory: ${{ github.workspace }}/build
