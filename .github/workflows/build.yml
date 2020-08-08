@@ -137,6 +137,7 @@ jobs:
           echo "::set-output name=version::${version}"
       - name: Install to Staging Area
         run: make install DESTDIR=${{github.workspace}}/${{ steps.info.outputs.package }}
+        working-directory: ${{ github.workspace }}/build
       - name: Generate Package Manifest # NOTE: We use an epoch (1:) because we differ from ubuntu versioning
         run: |-
           mkdir -p ${{steps.info.outputs.package}}/DEBIAN/control
