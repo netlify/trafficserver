@@ -91,6 +91,8 @@ jobs:
           tcl-dev
       - name: Generate Configure Script
         run: autoreconf --install --force
+        env:
+          AM_CXXFLAGS: "${{ matrix.AM_CXXFLAGS }} -std=c++17 -Wno-cpp -Wno-deprecated-copy"
       - name: Create Build Directory # Might not be needed due to autoreconf!
         run: mkdir -p ${{ github.workspace }}/build
       - name: Configure
