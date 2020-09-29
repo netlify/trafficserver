@@ -1010,7 +1010,7 @@ INKContInternal::destroy()
     if (ink_atomic_increment((int *)&m_event_count, 1) < 0) {
       ink_assert(!"not reached");
     }
-    this_ethread()->schedule_imm(this);
+    this_ethread()->schedule_imm_local(this);
   }
 }
 
