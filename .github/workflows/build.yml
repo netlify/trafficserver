@@ -129,6 +129,7 @@ jobs:
           GITHUB_TOKEN: ${{github.token}}
         run: >-
           gh release create
+          --repo netlify/trafficserver
           ${{needs.calendar.outputs.date}}.${{needs.calendar.outputs.time}}
           **/*.ddeb
           **/*.deb
