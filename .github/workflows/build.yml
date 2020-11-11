@@ -130,5 +130,5 @@ jobs:
         run: >-
           gh release create
           ${{needs.calendar.outputs.date}}.${{needs.calendar.outputs.time}}
-          *.ddeb
-          *.deb
+          **/*.ddeb
+          **/*.deb
