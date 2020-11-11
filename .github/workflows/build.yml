@@ -130,6 +130,7 @@ jobs:
         run: >-
           gh release create
           --repo netlify/trafficserver
+          --prerelease
           ${{needs.calendar.outputs.date}}.${{needs.calendar.outputs.time}}
           **/*.ddeb
           **/*.deb
