@@ -43,7 +43,7 @@ jobs:
           equivs
           libbrotli-dev
       - name: Setup Maintenance Script Path
-        run: echo "::add-path::${{github.workspace}}/readme-and-settings/debian/scripts"
+        run: echo "${{github.workspace}}/readme-and-settings/debian/scripts" >> $GITHUB_PATH
       - name: Setup GitHub Actions Bot
         run: |-
           git config --global user.name "$DEBFULLNAME"
