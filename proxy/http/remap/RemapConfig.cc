@@ -1213,7 +1213,7 @@ remap_parse_config_bti(const char *path, BUILD_TABLE_INFO *bti)
     tmp          = map_to;
 
     new_mapping->toUrl.create(nullptr);
-    rparse                   = new_mapping->toURL.parse_no_host_check(std::string_view(tmp, length));
+    rparse                   = new_mapping->toUrl.parse_no_host_check(std::string_view(tmp, length));
     map_to_start[origLength] = '\0'; // Unwhack
 
     if (rparse != PARSE_RESULT_DONE) {

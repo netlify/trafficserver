@@ -30,6 +30,7 @@
 #include "HTTP.h"
 #include "HdrToken.h"
 #include "ts/Diags.h"
+#include <string_view>
 
 /***********************************************************************
  *                                                                     *

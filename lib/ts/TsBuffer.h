@@ -33,6 +33,7 @@
 
 // For memcmp()
 #include <memory.h>
+#include <string_view>
 
 /// Apache Traffic Server commons.
 namespace ts
@@ -61,13 +62,13 @@ struct Buffer {
    */
   Buffer(char *ptr, ///< Pointer to buffer.
          size_t n   ///< Size of buffer.
-         );
+  );
   /** Construct from two pointers.
       @note This presumes a half open range, (start, end]
   */
   Buffer(char *start, ///< First valid character.
          char *end    ///< First invalid character.
-         );
+  );
 
   /** Equality.
       @return @c true if @a that refers to the same memory as @a this,
@@ -117,7 +118,7 @@ struct Buffer {
   /// @return @c this object.
   self &set(char *ptr,   ///< Buffer address.
             size_t n = 0 ///< Buffer size.
-            );
+  );
   /// Reset to empty.
   self &reset();
 };
@@ -139,7 +140,7 @@ struct ConstBuffer {
    */
   ConstBuffer(char const *ptr, ///< Pointer to buffer.
               size_t n         ///< Size of buffer.
-              );
+  );
   /** Construct from two pointers.
       @note This presumes a half open range (start, end]
       @note Due to ambiguity issues do not invoke this with
@@ -147,10 +148,10 @@ struct ConstBuffer {
   */
   ConstBuffer(char const *start, ///< First valid character.
               char const *end    ///< First invalid character.
-              );
+  );
   /// Construct from writable buffer.
   ConstBuffer(Buffer const &buffer ///< Buffer to copy.
-              );
+  );
 
   /** Equality.
       @return @c true if @a that refers to the same memory as @a this,
@@ -174,7 +175,7 @@ struct ConstBuffer {
   bool operator!=(Buffer const &that) const;
   /// Assign from non-const Buffer.
   self &operator=(Buffer const &that ///< Source buffer.
-                  );
+  );
 
   /// @return The first character in the buffer.
   char operator*() const;
@@ -194,6 +195,8 @@ struct ConstBuffer {
   /// @return @c true if the buffer has a non-zero pointer @b and size.
   operator pseudo_bool() const;
 
+  operator std::string_view() const { return {_ptr, _size}; }
+
   /// @name Accessors.
   //@{
   /// Get the data in the buffer.
@@ -211,13 +214,13 @@ struct ConstBuffer {
   /// @return @c this object.
   self &set(char const *ptr, ///< Buffer address.
             size_t n = 0     ///< Buffer size.
-            );
+  );
   /** Set from 2 pointers.
       @note This presumes a half open range (start, end]
   */
   self &set(char const *start, ///< First valid character.
             char const *end    ///< First invalid character.
-            );
+  );
   /// Reset to empty.
   self &reset();
 
@@ -286,12 +289,8 @@ struct ConstBuffer {
 // ----------------------------------------------------------
 // Inline implementations.
 
-inline Buffer::Buffer() : _ptr(nullptr), _size(0)
-{
-}
-inline Buffer::Buffer(char *ptr, size_t n) : _ptr(ptr), _size(n)
-{
-}
+inline Buffer::Buffer() : _ptr(nullptr), _size(0) {}
+inline Buffer::Buffer(char *ptr, size_t n) : _ptr(ptr), _size(n) {}
 inline Buffer &
 Buffer::set(char *ptr, size_t n)
 {
@@ -299,9 +298,7 @@ Buffer::set(char *ptr, size_t n)
   _size = n;
   return *this;
 }
-inline Buffer::Buffer(char *start, char *end) : _ptr(start), _size(end - start)
-{
-}
+inline Buffer::Buffer(char *start, char *end) : _ptr(start), _size(end - start) {}
 inline Buffer &
 Buffer::reset()
 {
@@ -329,7 +326,8 @@ Buffer::operator==(ConstBuffer const &that) const
 {
   return _size == that._size && _ptr == that._ptr;
 }
-inline bool Buffer::operator!() const
+inline bool
+Buffer::operator!() const
 {
   return !(_ptr && _size);
 }
@@ -337,11 +335,13 @@ inline Buffer::operator pseudo_bool() const
 {
   return _ptr && _size ? &self::operator! : 0;
 }
-inline char Buffer::operator*() const
+inline char
+Buffer::operator*() const
 {
   return *_ptr;
 }
-inline Buffer &Buffer::operator++()
+inline Buffer &
+Buffer::operator++()
 {
   ++_ptr;
   --_size;
@@ -358,18 +358,10 @@ Buffer::size() const
   return _size;
 }
 
-inline ConstBuffer::ConstBuffer() : _ptr(nullptr), _size(0)
-{
-}
-inline ConstBuffer::ConstBuffer(char const *ptr, size_t n) : _ptr(ptr), _size(n)
-{
-}
-inline ConstBuffer::ConstBuffer(char const *start, char const *end) : _ptr(start), _size(end - start)
-{
-}
-inline ConstBuffer::ConstBuffer(Buffer const &that) : _ptr(that._ptr), _size(that._size)
-{
-}
+inline ConstBuffer::ConstBuffer() : _ptr(nullptr), _size(0) {}
+inline ConstBuffer::ConstBuffer(char const *ptr, size_t n) : _ptr(ptr), _size(n) {}
+inline ConstBuffer::ConstBuffer(char const *start, char const *end) : _ptr(start), _size(end - start) {}
+inline ConstBuffer::ConstBuffer(Buffer const &that) : _ptr(that._ptr), _size(that._size) {}
 inline ConstBuffer &
 ConstBuffer::set(char const *ptr, size_t n)
 {
@@ -420,7 +412,8 @@ ConstBuffer::operator==(Buffer const &that) const
 {
   return _size == that._size && 0 == memcmp(_ptr, that._ptr, _size);
 }
-inline bool ConstBuffer::operator!() const
+inline bool
+ConstBuffer::operator!() const
 {
   return !(_ptr && _size);
 }
@@ -428,11 +421,13 @@ inline ConstBuffer::operator pseudo_bool() const
 {
   return _ptr && _size ? &self::operator! : 0;
 }
-inline char ConstBuffer::operator*() const
+inline char
+ConstBuffer::operator*() const
 {
   return *_ptr;
 }
-inline ConstBuffer &ConstBuffer::operator++()
+inline ConstBuffer &
+ConstBuffer::operator++()
 {
   ++_ptr;
   --_size;
@@ -450,7 +445,8 @@ ConstBuffer::data() const
 {
   return _ptr;
 }
-inline char ConstBuffer::operator[](int n) const
+inline char
+ConstBuffer::operator[](int n) const
 {
   return _ptr[n];
 }
@@ -509,7 +505,7 @@ ConstBuffer::clip(char const *p)
   return *this;
 }
 
-} // end namespace
+} // namespace ts
 
 typedef ts::Buffer TsBuffer;
 typedef ts::ConstBuffer TsConstBuffer;

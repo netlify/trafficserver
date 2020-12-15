@@ -27,6 +27,8 @@
 #include "HdrToken.h"
 #include "HdrHeap.h"
 #include "ts/CryptoHash.h"
+#include "ts/INK_MD5.h"
+#include "ts/MMH.h"
 #include "MIME.h"
 #include <string_view>
 
@@ -89,7 +91,44 @@ struct URLImpl : public HdrHeapObjImpl {
   void check_strings(HeapCheck *heaps, int num_heaps);
 };
 
-using URLHashContext = CryptoContext;
+/// Crypto Hash context for URLs.
+/// @internal This just forwards on to another specific context but avoids
+/// putting that switch logic in multiple places. The working context is put
+/// in to class local storage (@a _obj) via placement @a new.
+class URLHashContext : public CryptoContext
+{
+public:
+  URLHashContext();
+  /// Update the hash with @a data of @a length bytes.
+  virtual bool update(void const *data, int length);
+  /// Finalize and extract the @a hash.
+  virtual bool finalize(CryptoHash &hash);
+
+  enum HashType {
+    UNSPECIFIED,
+    MD5,
+    MMH,
+  }; ///< What type of hash we really are.
+  static HashType Setting;
+
+  /// Size of storage for placement @c new of hashing context.
+  static size_t const OBJ_SIZE = 256;
+
+protected:
+  char _obj[OBJ_SIZE]; ///< Raw storage for instantiated context.
+};
+
+inline bool
+URLHashContext::update(void const *data, int length)
+{
+  return reinterpret_cast<CryptoContext *>(_obj)->update(data, length);
+}
+
+inline bool
+URLHashContext::finalize(CryptoHash &hash)
+{
+  return reinterpret_cast<CryptoContext *>(_obj)->finalize(hash);
+}
 
 extern const char *URL_SCHEME_FILE;
 extern const char *URL_SCHEME_FTP;

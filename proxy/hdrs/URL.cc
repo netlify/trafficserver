@@ -116,6 +116,22 @@ validate_host_name(std::string_view addr)
 
 /*-------------------------------------------------------------------------
   -------------------------------------------------------------------------*/
+URLHashContext::HashType URLHashContext::Setting = URLHashContext::MD5;
+
+URLHashContext::URLHashContext()
+{
+  switch (Setting) {
+  case UNSPECIFIED:
+  case MD5:
+    new (_obj) MD5Context;
+    break;
+  case MMH:
+    new (_obj) MMHContext;
+    break;
+  default:
+    ink_assert("Invalid global URL hash context");
+  };
+}
 
 void
 url_init()
@@ -1841,7 +1857,7 @@ url_CryptoHash_get(const URLImpl *url, CryptoHash *hash, cache_generation_t gene
 void
 url_host_CryptoHash_get(URLImpl *url, CryptoHash *hash)
 {
-  CryptoContext ctx;
+  MD5Context ctx;
 
   if (url->m_ptr_scheme) {
     ctx.update(url->m_ptr_scheme, url->m_len_scheme);
