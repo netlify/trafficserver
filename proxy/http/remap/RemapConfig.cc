@@ -837,16 +837,14 @@ remap_load_plugin(const char **argv, int argc, url_mapping *mp, char *errbuf, in
         snprintf(errbuf, errbufsize, R"(Can't find "%s" function in remap plugin "%s")", TSREMAP_FUNCNAME_INIT, c);
         retcode = -10;
       } else if (!pi->fp_tsremap_new_instance && pi->fp_tsremap_delete_instance) {
-        snprintf(errbuf, errbufsize,
-                 R"(Can't find "%s" function in remap plugin "%s" which is required if "%s" function exists)",
+        snprintf(errbuf, errbufsize, R"(Can't find "%s" function in remap plugin "%s" which is required if "%s" function exists)",
                  TSREMAP_FUNCNAME_NEW_INSTANCE, c, TSREMAP_FUNCNAME_DELETE_INSTANCE);
         retcode = -11;
       } else if (!pi->fp_tsremap_do_remap) {
         snprintf(errbuf, errbufsize, R"(Can't find "%s" function in remap plugin "%s")", TSREMAP_FUNCNAME_DO_REMAP, c);
         retcode = -12;
       } else if (pi->fp_tsremap_new_instance && !pi->fp_tsremap_delete_instance) {
-        snprintf(errbuf, errbufsize,
-                 R"(Can't find "%s" function in remap plugin "%s" which is required if "%s" function exists)",
+        snprintf(errbuf, errbufsize, R"(Can't find "%s" function in remap plugin "%s" which is required if "%s" function exists)",
                  TSREMAP_FUNCNAME_DELETE_INSTANCE, c, TSREMAP_FUNCNAME_NEW_INSTANCE);
         retcode = -13;
       }
@@ -1199,12 +1197,13 @@ remap_parse_config_bti(const char *path, BUILD_TABLE_INFO *bti)
     }
 
     new_mapping->fromURL.create(nullptr);
-    rparse = new_mapping->fromURL.parse_no_path_component_breakdown(tmp, length);
+    rparse = new_mapping->fromURL.parse_regex(tmp, length);
 
     map_from_start[origLength] = '\0'; // Unwhack
 
     if (rparse != PARSE_RESULT_DONE) {
-      errStr = "malformed From URL";
+      snprintf(errStrBuf, sizeof(errStrBuf), "malformed From URL: %.*s", length, tmp);
+      errStr = errStrBuf;
       goto MAP_ERROR;
     }
 
@@ -1214,11 +1213,12 @@ remap_parse_config_bti(const char *path, BUILD_TABLE_INFO *bti)
     tmp          = map_to;
 
     new_mapping->toUrl.create(nullptr);
-    rparse                   = new_mapping->toUrl.parse_no_path_component_breakdown(tmp, length);
+    rparse                   = new_mapping->toUrl.parse_no_host_check(std::string_view(tmp, length));
     map_to_start[origLength] = '\0'; // Unwhack
 
     if (rparse != PARSE_RESULT_DONE) {
-      errStr = "malformed To URL";
+      snprintf(errStrBuf, sizeof(errStrBuf), "malformed To URL: %.*s", length, tmp);
+      errStr = errStrBuf;
       goto MAP_ERROR;
     }
 

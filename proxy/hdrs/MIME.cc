@@ -1157,7 +1157,7 @@ static inline MIMEField *
 rebase(MIMEField *dest_ptr, ///< Original pointer into @src_base memory.
        void *dest_base,     ///< New base pointer.
        void *src_base       ///< Original base pointer.
-       )
+)
 {
   return reinterpret_cast<MIMEField *>(reinterpret_cast<char *>(dest_ptr) +
                                        (static_cast<char *>(dest_base) - static_cast<char *>(src_base)));
@@ -1300,9 +1300,9 @@ mime_hdr_field_find(MIMEHdrImpl *mh, const char *field_name_str, int field_name_
 
   ink_assert(field_name_len >= 0);
 
-////////////////////////////////////////////
-// do presence check and slot accelerator //
-////////////////////////////////////////////
+  ////////////////////////////////////////////
+  // do presence check and slot accelerator //
+  ////////////////////////////////////////////
 
 #if TRACK_FIELD_FIND_CALLS
   Debug("http", "mime_hdr_field_find(hdr 0x%X, field %.*s): is_wks = %d", mh, field_name_len, field_name_str, is_wks);
@@ -2787,11 +2787,12 @@ mime_hdr_print(HdrHeap * /* heap ATS_UNUSED */, MIMEHdrImpl *mh, char *buf_start
   return 1;
 }
 
-int
-mime_mem_print(const char *src_d, int src_l, char *buf_start, int buf_length, int *buf_index_inout, int *buf_chars_to_skip_inout)
+namespace
 {
-  int copy_l;
-
+int
+mime_mem_print_(const char *src_d, int src_l, char *buf_start, int buf_length, int *buf_index_inout, int *buf_chars_to_skip_inout,
+                int (*char_transform)(int char_in))
+{
   if (buf_start == nullptr) { // this case should only be used by test_header
     ink_release_assert(buf_index_inout == nullptr);
     ink_release_assert(buf_chars_to_skip_inout == nullptr);
@@ -2801,7 +2802,6 @@ mime_mem_print(const char *src_d, int src_l, char *buf_start, int buf_length, in
     return 1;
   }
 
-  ink_assert(buf_start != nullptr);
   ink_assert(src_d != nullptr);
 
   if (*buf_chars_to_skip_inout > 0) {
@@ -2815,12 +2815,33 @@ mime_mem_print(const char *src_d, int src_l, char *buf_start, int buf_length, in
     }
   }
 
-  copy_l = std::min(buf_length - *buf_index_inout, src_l);
+  int copy_l = std::min(buf_length - *buf_index_inout, src_l);
   if (copy_l > 0) {
-    memcpy(buf_start + *buf_index_inout, src_d, copy_l);
+    buf_start += *buf_index_inout;
+    std::transform(src_d, src_d + copy_l, buf_start, char_transform);
     *buf_index_inout += copy_l;
   }
   return (src_l == copy_l);
+}
+
+int
+to_same_char(int ch)
+{
+  return ch;
+}
+
+} // end anonymous namespace
+
+int
+mime_mem_print(const char *src_d, int src_l, char *buf_start, int buf_length, int *buf_index_inout, int *buf_chars_to_skip_inout)
+{
+  return mime_mem_print_(src_d, src_l, buf_start, buf_length, buf_index_inout, buf_chars_to_skip_inout, to_same_char);
+}
+
+int
+mime_mem_print_lc(const char *src_d, int src_l, char *buf_start, int buf_length, int *buf_index_inout, int *buf_chars_to_skip_inout)
+{
+  return mime_mem_print_(src_d, src_l, buf_start, buf_length, buf_index_inout, buf_chars_to_skip_inout, std::tolower);
 }
 
 int
