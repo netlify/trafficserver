@@ -4040,7 +4040,7 @@ TSCacheKeyDigestFromUrlSet(TSCacheKey key, TSMLoc url)
     return TS_ERROR;
   }
 
-  url_MD5_get((URLImpl *)url, &((CacheInfo *)key)->cache_key);
+  url_CryptoHash_get((URLImpl *)url, &((CacheInfo *)key)->cache_key);
   return TS_SUCCESS;
 }
 
