@@ -34,16 +34,20 @@
 #include "HttpSM.h"
 #include "HttpDebugNames.h"
 
+#include "ts/ink_hrtime.h"
+
 #define STATE_ENTER(state_name, event)                                                                                   \
   {                                                                                                                      \
     REMEMBER(event, -1);                                                                                                 \
-    Debug("http_cache", "[%" PRId64 "] [%s, %s]", master_sm->sm_id, #state_name, HttpDebugNames::get_event_name(event)); \
+    DebugSM("http_cache", "[%" PRId64 "] [%s, %s]", master_sm->sm_id, #state_name, HttpDebugNames::get_event_name(event)); \
   }
 
 #define __REMEMBER(x) #x
 #define _REMEMBER(x) __REMEMBER(x)
 
 #define REMEMBER(e, r) master_sm->add_history_entry(__FILE__ ":" _REMEMBER(__LINE__), e, r);
+
+#define DebugSM(tag, ...) DebugSpecific(master_sm->debug_on, tag, __VA_ARGS__)
 
 HttpCacheAction::HttpCacheAction() : sm(nullptr)
 {
@@ -121,6 +125,8 @@ HttpCacheSM::state_cache_open_read(int event, void *data)
 
   switch (event) {
   case CACHE_EVENT_OPEN_READ:
+    DebugSM("http_cache", "[%" PRId64 "] [state_cache_open_read] it's time for openRead", master_sm->sm_id);
+
     HTTP_INCREMENT_DYN_STAT(http_current_cache_connections_stat);
     ink_assert((cache_read_vc == nullptr) || master_sm->t_state.redirect_info.redirect_in_process);
     if (cache_read_vc) {
@@ -134,6 +140,8 @@ HttpCacheSM::state_cache_open_read(int event, void *data)
 
   case CACHE_EVENT_OPEN_READ_FAILED:
     if ((intptr_t)data == -ECACHE_DOC_BUSY) {
+      DebugSM("http_cache", "[%" PRId64 "] [state_cache_open_read] openRead failed with ECACHE_DOC_BUSY", master_sm->sm_id);
+
       // Somebody else is writing the object
       if (open_read_tries <= master_sm->t_state.txn_conf->max_cache_open_read_retries) {
         // Retry to read; maybe the update finishes in time
@@ -146,6 +154,9 @@ HttpCacheSM::state_cache_open_read(int event, void *data)
         master_sm->handleEvent(event, data);
       }
     } else {
+      DebugSM("http_cache", "[%" PRId64 "] [state_cache_open_read] simple miss in the cache",
+        master_sm->sm_id);
+
       // Simple miss in the cache.
       open_read_cb = true;
       master_sm->handleEvent(event, data);
@@ -157,7 +168,7 @@ HttpCacheSM::state_cache_open_read(int event, void *data)
     // than or equal to the max number of open read retries,
     // else treat as a cache miss.
     ink_assert(open_read_tries <= master_sm->t_state.txn_conf->max_cache_open_read_retries || write_locked);
-    Debug("http_cache", "[%" PRId64 "] [state_cache_open_read] cache open read failure %d. "
+    DebugSM("http_cache", "[%" PRId64 "] [state_cache_open_read] cache open read failure %d. "
                         "retrying cache open read...",
           master_sm->sm_id, open_read_tries);
 
@@ -195,7 +206,7 @@ HttpCacheSM::state_cache_open_write(int event, void *data)
     } else {
       // The cache is hosed or full or something.
       // Forward the failure to the main sm
-      Debug("http_cache", "[%" PRId64 "] [state_cache_open_write] cache open write failure %d. "
+      DebugSM("http_cache", "[%" PRId64 "] [state_cache_open_write] cache open write failure %d. "
                           "done retrying...",
             master_sm->sm_id, open_write_tries);
       open_write_cb = true;
@@ -207,7 +218,7 @@ HttpCacheSM::state_cache_open_write(int event, void *data)
     // Retry the cache open write if the number retries is less
     // than or equal to the max number of open write retries
     ink_assert(open_write_tries <= master_sm->t_state.txn_conf->max_cache_open_write_retries);
-    Debug("http_cache", "[%" PRId64 "] [state_cache_open_write] cache open write failure %d. "
+    DebugSM("http_cache", "[%" PRId64 "] [state_cache_open_write] cache open write failure %d. "
                         "retrying cache open write...",
           master_sm->sm_id, open_write_tries);
 
@@ -228,6 +239,9 @@ void
 HttpCacheSM::do_schedule_in()
 {
   ink_assert(pending_action == nullptr);
+
+  DebugSM("http_cache", "[%" PRId64 "] [state_cache_open_read] scheduling next openRead in %" PRId64 " milliseconds",
+    master_sm->sm_id, master_sm->t_state.txn_conf->cache_open_read_retry_time);
   Action *action_handle =
     mutex->thread_holding->schedule_in(this, HRTIME_MSECONDS(master_sm->t_state.txn_conf->cache_open_read_retry_time));
 
@@ -250,8 +264,15 @@ HttpCacheSM::do_cache_open_read(const HttpCacheKey &key)
   }
   // Initialising read-while-write-inprogress flag
   this->readwhilewrite_inprogress = false;
+
+  ink_hrtime start_time = ink_get_hrtime_internal();
+
+  DebugSM("http_cache", "[%" PRId64 "] [do_cache_open_read] trying openRead, readwhilewrite_inprogress = %d", master_sm->sm_id, this->readwhilewrite_inprogress);
+  DebugSM("http_cache", "[%" PRId64 "] [do_cache_open_read] trying openRead, btw master_sm->cont_sm_id is %d and this->cont_sm_id is %d", master_sm->sm_id, master_sm->cont_sm_id, this->cont_sm_id);
   Action *action_handle           = cacheProcessor.open_read(this, &key, master_sm->t_state.cache_control.cluster_cache_local,
                                                    this->read_request_hdr, this->read_config, this->read_pin_in_cache);
+  DebugSM("http_cache", "[%" PRId64 "] [do_cache_open_read] trying openRead... done! took %d milliseconds", master_sm->sm_id,
+        (int)ink_hrtime_diff_msec(start_time, ink_get_hrtime_internal()));
 
   if (action_handle != ACTION_RESULT_DONE) {
     pending_action = action_handle;

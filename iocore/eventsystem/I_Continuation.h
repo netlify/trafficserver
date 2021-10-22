@@ -133,6 +133,9 @@ public:
   */
   ContFlags control_flags;
 
+  int64_t cont_sm_id;
+  bool cont_debug_on;
+
   /**
     Receives the event code and data for an Event.
 

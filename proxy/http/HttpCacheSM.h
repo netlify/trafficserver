@@ -62,6 +62,11 @@ public:
   init(HttpSM *sm_arg, Ptr<ProxyMutex> &amutex)
   {
     master_sm = sm_arg;
+    if (master_sm) {
+      cont_sm_id = ((Continuation *)master_sm)->cont_sm_id;
+      cont_debug_on = ((Continuation *)master_sm)->cont_debug_on;
+    }
+
     mutex     = amutex;
     captive_action.init(this);
   }

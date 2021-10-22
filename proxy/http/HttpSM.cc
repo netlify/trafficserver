@@ -402,6 +402,9 @@ HttpSM::init()
   //  Leaving sm_id as int64_t to minimize code changes.
 
   sm_id                    = (int64_t)ink_atomic_increment((&next_sm_id), 1);
+
+  cont_sm_id = sm_id;
+
   t_state.state_machine_id = sm_id;
   t_state.state_machine    = this;
 
@@ -567,6 +570,8 @@ HttpSM::attach_client_session(ProxyClientTransaction *client_vc, IOBufferReader 
   if (ua_session->debug()) {
     debug_on = true;
   }
+
+  cont_debug_on = debug_on;
 
   start_sub_sm();
 
@@ -869,11 +874,14 @@ HttpSM::state_watch_for_client_abort(int event, void *data)
     // We got an early EOS.
     NetVConnection *netvc = ua_session->get_netvc();
     if (ua_session->allow_half_open()) {
+      DebugSM("http", "[%" PRId64 "] got early EOS, half-open allowed", sm_id);
       if (netvc) {
+        DebugSM("http", "[%" PRId64 "] got early EOS, half-open allowed, doing IO_SHUTDOWN_READ", sm_id);
         netvc->do_io_shutdown(IO_SHUTDOWN_READ);
       }
       ua_entry->eos = true;
     } else {
+      DebugSM("http", "[%" PRId64 "] got early EOS, half-open NOT allowed", sm_id);
       ua_session->do_io_close();
       ua_buffer_reader = nullptr;
       vc_table.cleanup_entry(ua_entry);
@@ -4602,11 +4610,13 @@ HttpSM::do_cache_lookup_and_read()
     c_url = t_state.cache_info.lookup_url;
   }
 
-  DebugSM("http_seq", "[HttpSM::do_cache_lookup_and_read] [%" PRId64 "] Issuing cache lookup for URL %s", sm_id,
-          c_url->string_get(&t_state.arena));
-
   HttpCacheKey key;
   Cache::generate_key(&key, c_url, t_state.txn_conf->cache_generation_number);
+
+  char keyHex[33];
+
+  DebugSM("http_seq", "[HttpSM::do_cache_lookup_and_read] [%" PRId64 "] Issuing cache lookup for URL %s, hash key %s", sm_id,
+          c_url->string_get(&t_state.arena), key.hash.toHexStr(keyHex));
 
   Action *cache_action_handle =
     cache_sm.open_read(&key, c_url, &t_state.hdr_info.client_request, &(t_state.cache_info.config),
