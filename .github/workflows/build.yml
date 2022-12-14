@@ -5,6 +5,7 @@ on:
       - readme-and-settings
       - 9.0.x-netlify
       - 9.1.x-netlify
+      - netlify/*
 env:
   DEBFULLNAME: 'github-actions[bot]'
   DEBEMAIL: '41898282+github-actions[bot]@users.noreply.github.com'
