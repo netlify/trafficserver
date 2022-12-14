@@ -310,6 +310,12 @@ struct CacheVC : public CacheVConnection {
     return f.compressed_in_ram;
   }
 
+  int
+  alternate_count() const override
+  {
+    return vector.count();
+  }
+
   bool writer_done();
   int calluser(int event);
   int callcont(int event);
