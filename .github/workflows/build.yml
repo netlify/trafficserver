@@ -6,8 +6,8 @@ on:
       - 9.0.x-netlify
       - 9.1.x-netlify
 env:
-  DEBFULLNAME: 'github-actions[bot]'
-  DEBEMAIL: '41898282+github-actions[bot]@users.noreply.github.com'
+  DEBFULLNAME: "github-actions[bot]"
+  DEBEMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
   DEBIAN_FRONTEND: noninteractive
   DPKG_COLORS: always
   TZ: UTC
@@ -67,8 +67,8 @@ jobs:
         uses: haya14busa/action-cond@v1
         id: upstream
         with:
-          if_false: 9.0.x-netlify
-          if_true: ${{ github.base_ref }}
+          if_false: 9.1.x-netlify
+          if_true: ${{ github.head_ref }}
           cond: ${{ github.base_ref == '9.1.x-netlify' || github.base_ref == '9.0.x-netlify' }}
       - name: Select Debian Branch
         uses: haya14busa/action-cond@v1
@@ -93,7 +93,7 @@ jobs:
       - name: Update Changelog
         working-directory: upstream
         run: >-
-          update-debian-changelog 
+          update-debian-changelog
           --distribution=pull-request
           --version=${{needs.calendar.outputs.date}}
           --revision=${{needs.calendar.outputs.time}}
