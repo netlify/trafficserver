@@ -311,7 +311,7 @@ struct CacheVC : public CacheVConnection {
   }
 
   int
-  alternate_count() const override
+  alternate_count() override
   {
     return vector.count();
   }

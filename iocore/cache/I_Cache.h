@@ -200,6 +200,12 @@ struct CacheVConnection : public VConnection {
   }
 
   virtual int
+  alternate_count()
+  {
+    return 0;
+  }
+
+  virtual int
   get_volume_number() const
   {
     return -1;
