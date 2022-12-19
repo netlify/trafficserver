@@ -5536,6 +5536,9 @@ TSHttpTxnInfoIntGet(TSHttpTxn txnp, TSHttpTxnInfoKey key, TSMgmtInt *value)
   case TS_TXN_INFO_CACHE_VOLUME:
     *value = (static_cast<TSMgmtInt>(c_sm->get_volume_number()));
     break;
+  case TS_TXN_INFO_CACHE_ALTERNATE_COUNT:
+    *value = (static_cast<TSMgmtInt>(c_sm->alternate_count()));
+    break;
   default:
     return TS_ERROR;
   }
