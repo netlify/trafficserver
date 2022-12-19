@@ -108,6 +108,12 @@ public:
     return cache_read_vc ? (cache_read_vc->is_compressed_in_ram()) : false;
   }
 
+  int
+  alternate_count()
+  {
+    return cache_read_vc ? (cache_read_vc->alternate_count()) : 0;
+  }
+
   inline void
   set_open_read_tries(int value)
   {
