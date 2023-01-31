@@ -1,0 +1,136 @@
+name: Pull Request Build
+on:
+  pull_request:
+    branches:
+      - readme-and-settings
+      - 9.1.x-netlify
+      - 9.2.x-netlify
+env:
+  DEBFULLNAME: "github-actions[bot]"
+  DEBEMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+  DEBIAN_FRONTEND: noninteractive
+  DPKG_COLORS: always
+  TZ: UTC
+jobs:
+  calendar:
+    name: Date and Time
+    runs-on: ubuntu-20.04
+    outputs:
+      timestamp: ${{ steps.datetime.outputs.timestamp }}
+      date: ${{ steps.datetime.outputs.date }}
+      time: ${{ steps.datetime.outputs.time }}
+    steps:
+      - name: Get Current Date
+        id: datetime
+        run: |-
+          time=$(date --date "1970-01-01 $(date +%T)" +%s)
+          echo "::set-output name=timestamp::$(date --iso-8601=seconds)"
+          echo "::set-output name=date::$(date --utc +%Y.%m.%d)"
+          echo "::set-output name=time::${time}"
+  build:
+    name: Build Netlify TrafficServer
+    needs: calendar
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true
+      matrix:
+        profile: [debug, release, relwithdebinfo]
+    steps:
+      - name: Update Apt Package Index
+        run: |
+          sudo apt-mark hold grub-efi-amd64-signed
+          sudo apt-get update --quiet
+          sudo apt-get --yes --quiet upgrade
+      - name: Setup Build Environment
+        run: >-
+          sudo apt-get install --yes
+          git-buildpackage
+          build-essential
+          devscripts
+          debhelper
+          equivs
+          libbrotli-dev
+      - name: Setup Maintenance Script Path
+        run: echo "${{github.workspace}}/package/debian/scripts" >> $GITHUB_PATH
+      - name: Setup GitHub Actions Bot
+        run: |-
+          git config --global user.name "$DEBFULLNAME"
+          git config --global user.email "$DEBEMAIL"
+      - name: Setup Build Artifact Cache
+        uses: actions/cache@v2
+        with:
+          path: ${{env.HOME}}/.ccache
+          key: ${{matrix.profile}}-ccache-${{needs.calendar.outputs.timestamp}}
+          restore-keys: |
+            ${{matrix.profile}}-ccache-
+      - name: Select Upstream Branch
+        uses: haya14busa/action-cond@v1
+        id: upstream
+        with:
+          if_false: 9.2.x-netlify
+          if_true: ${{ github.head_ref }}
+          cond: ${{ github.base_ref == '9.2.x-netlify' || github.base_ref == '9.1.x-netlify' }}
+      - name: Select Debian Branch
+        uses: haya14busa/action-cond@v1
+        id: debian
+        with:
+          if_false: ${{ github.head_ref }}
+          if_true: readme-and-settings
+          cond: ${{ github.base_ref == '9.2.x-netlify' || github.base_ref == '9.1.x-netlify' }}
+      - name: Checkout Upstream Branch
+        uses: actions/checkout@v2
+        with:
+          ref: ${{steps.upstream.outputs.value}}
+          path: upstream
+      - name: Checkout Debian Branch
+        uses: actions/checkout@v2
+        with:
+          ref: ${{steps.debian.outputs.value}}
+          path: package
+      - name: Copy Debian Packaging Files
+        run: |-
+          cp -r package/debian upstream/
+      - name: Update Changelog
+        working-directory: upstream
+        run: >-
+          update-debian-changelog
+          --distribution=pull-request
+          --version=${{needs.calendar.outputs.date}}
+          --revision=${{needs.calendar.outputs.time}}
+          --profile=${{matrix.profile}}
+          --package=netlify-trafficserver-dev
+          --package=netlify-trafficserver
+      - name: Build Package
+        working-directory: upstream
+        run: >-
+          gbp buildpackage
+          --git-verbose
+          --git-debian-branch=${{steps.debian.outputs.value}}
+          --git-upstream-tag=${{steps.upstream.outputs.value}}
+          --build-profiles=${{matrix.profile}}
+          --buildinfo-option=-u${GITHUB_WORKSPACE}
+          --changes-option=-u${GITHUB_WORKSPACE}
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{matrix.profile}}
+          path: |-
+            ${{github.workspace}}/*.deb
+            ${{github.workspace}}/*.ddeb
+  upload:
+    name: Create Prerelease
+    needs: [build, calendar]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{github.token}}
+        run: >-
+          gh release create
+          --repo netlify/trafficserver
+          --prerelease
+          ${{needs.calendar.outputs.date}}.${{needs.calendar.outputs.time}}
+          **/*.ddeb
+          **/*.deb
