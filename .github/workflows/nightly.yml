@@ -19,8 +19,7 @@ jobs:
     steps:
       - name: Get Current Date
         id: datetime
-        run: |-
-          echo "::set-output name=date::$(date +%s)"
+        run: echo "date=$(date +%s)" >> $GITHUB_OUTPUT
   build:
     name: Build TrafficServer
     needs: calendar
