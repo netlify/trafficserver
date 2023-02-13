@@ -24,9 +24,9 @@ jobs:
         id: datetime
         run: |-
           time=$(date --date "1970-01-01 $(date +%T)" +%s)
-          echo "::set-output name=timestamp::$(date --iso-8601=seconds)"
-          echo "::set-output name=date::$(date --utc +%Y.%m.%d)"
-          echo "::set-output name=time::${time}"
+          echo "timestamp=$(date --iso-8601=seconds)" >> $GITHUB_OUTPUT
+          echo "date=$(date --utc +%Y.%m.%d)" >> $GITHUB_OUTPUT
+          echo "time=${time}" >> $GITHUB_OUTPUT
   build:
     name: Build Netlify TrafficServer
     needs: calendar
