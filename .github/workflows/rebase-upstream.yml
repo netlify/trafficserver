@@ -11,10 +11,24 @@ on:
       - "on-demand-check"
 
 jobs:
-  "update_master":
-    name: "update master from upstream"
+  update-branches:
+    name: "update branches from upstream"
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { local: master, upstream: master }
+          - { local: master-netlify, upstream: master }
+          - { local: "9.1.x", upstream: "9.1.x" }
+          - { local: "9.1.x-netlify", upstream: "9.1.x" }
+          - { local: "9.2.x", upstream: "9.2.x" }
+          - { local: "9.2.x-netlify", upstream: "9.2.x" }
     steps:
+      - uses: navikt/github-app-token-generator@a3831f44404199df32d8f39f7c0ad9bb8fa18b1c
+        id: get-token
+        with:
+          private-key: ${{ secrets.TOKENS_PRIVATE_KEY }}
+          app-id: ${{ secrets.TOKENS_APP_ID }}
       - name: clone repo
         uses: actions/checkout@v2
         with:
@@ -23,104 +37,9 @@ jobs:
       - name: rebase upstream
         uses: zxaos/patchup@v1
         with:
-          local_branch: master
-          github_token: ${{ secrets.PATCHUP_NETLIBOT_TOKEN }}
-          upstream_branch: master
+          local_branch: ${{ matrix.local }}
+          github_token: ${{ steps.get-token.outputs.token }}
+          upstream_branch: ${{ matrix.upstream }}
           upstream_repo: apache/trafficserver
-          target_tag: patchup-master
-          conflict_reviewers: "zxaos"
-
-  "update_master-netlify":
-    name: "update master-netlify from upstream"
-    runs-on: ubuntu-latest
-    steps:
-      - name: clone repo
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: true
-          fetch-depth: 0
-      - name: rebase upstream
-        uses: zxaos/patchup@v1
-        with:
-          local_branch: master-netlify
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          upstream_branch: master
-          upstream_repo: apache/trafficserver
-          target_tag: patchup-master-netlify
-          conflict_reviewers: "zxaos"
-
-  "update_9-1-x":
-    name: "update 9.1.x from upstream"
-    runs-on: ubuntu-latest
-    steps:
-      - name: clone repo
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: true
-          fetch-depth: 0
-      - name: rebase upstream
-        uses: zxaos/patchup@v1
-        with:
-          local_branch: 9.1.x
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          upstream_branch: 9.1.x
-          upstream_repo: apache/trafficserver
-          target_tag: patchup-9.1.x
-          conflict_reviewers: "zxaos"
-
-  "update_9-1-x-netlify":
-    name: "update 9.1.x-netlify from upstream"
-    runs-on: ubuntu-latest
-    steps:
-      - name: clone repo
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: true
-          fetch-depth: 0
-      - name: rebase upstream
-        uses: zxaos/patchup@v1
-        with:
-          local_branch: 9.1.x-netlify
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          upstream_branch: 9.1.x
-          upstream_repo: apache/trafficserver
-          target_tag: patchup-9.1.x-netlify
-          conflict_reviewers: "zxaos"
-
-  "update_9-2-x":
-    name: "update 9.2.x from upstream"
-    runs-on: ubuntu-latest
-    steps:
-      - name: clone repo
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: true
-          fetch-depth: 0
-      - name: rebase upstream
-        uses: zxaos/patchup@v1
-        with:
-          local_branch: 9.2.x
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          upstream_branch: 9.2.x
-          upstream_repo: apache/trafficserver
-          target_tag: patchup-9.2.x
-          conflict_reviewers: "zxaos"
-
-  "update_9-2-x-netlify":
-    name: "update 9.2.x-netlify from upstream"
-    runs-on: ubuntu-latest
-    steps:
-      - name: clone repo
-        uses: actions/checkout@v2
-        with:
-          persist-credentials: true
-          fetch-depth: 0
-      - name: rebase upstream
-        uses: zxaos/patchup@v1
-        with:
-          local_branch: 9.2.x-netlify
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          upstream_branch: 9.2.x
-          upstream_repo: apache/trafficserver
-          target_tag: patchup-9.2.x-netlify
-          conflict_reviewers: "zxaos"
+          target_tag: patchup-${{ matrix.local }}
+          conflict_reviewers: "@netlify/core-pod-adn"
